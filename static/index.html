@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Financial Analyzer</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script defer src="/static/app.js"></script>
+</head>
+<body>
+  <div id="toast" class="toast" role="status"></div>
+
+  <section id="auth-screen" class="auth-shell">
+    <div class="auth-brand">
+      <div class="brand-mark">₹</div>
+      <p class="eyebrow">YOUR MONEY, CLEARER</p>
+      <h1>Make every<br><span>rupee count.</span></h1>
+      <p class="muted auth-copy">Track daily spending, plan your monthly budget, and understand your money over time.</p>
+      <div class="auth-points">
+        <div><span>✓</span> Daily, monthly & yearly reports</div>
+        <div><span>✓</span> Personal, private account</div>
+        <div><span>✓</span> Preset expense categories</div>
+      </div>
+    </div>
+    <div class="auth-card">
+      <div class="mobile-brand"><div class="brand-mark small">₹</div><strong>FINORA</strong></div>
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="show-login">Sign in</button>
+        <button class="auth-tab" id="show-register">Create account</button>
+      </div>
+      <form id="login-form" class="auth-form">
+        <h2>Welcome back</h2>
+        <p class="muted">Sign in to your personal finance space.</p>
+        <label>Username<input id="login-username" autocomplete="username" required minlength="3" placeholder="e.g. anand123"></label>
+        <label>Password<input id="login-password" type="password" autocomplete="current-password" required placeholder="Enter your password"></label>
+        <button class="btn primary full" type="submit">Sign in <span>→</span></button>
+        <p class="form-note">Your finances, organized in one place.</p>
+      </form>
+      <form id="register-form" class="auth-form hidden">
+        <h2>Create your account</h2>
+        <p class="muted">Your account gets its own private dashboard.</p>
+        <label>Username<input id="register-username" autocomplete="username" required minlength="3" maxlength="30" placeholder="Choose a username"></label>
+        <label>Password<input id="register-password" type="password" autocomplete="new-password" required minlength="8" placeholder="At least 8 characters"></label>
+        <label>Confirm password<input id="register-confirm" type="password" autocomplete="new-password" required minlength="8" placeholder="Repeat password"></label>
+        <button class="btn primary full" type="submit">Create account <span>→</span></button>
+        <p class="form-note">Use a strong password you don't use elsewhere.</p>
+      </form>
+    </div>
+  </section>
+
+  <div id="app-screen" class="app-shell hidden">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand-row"><div class="brand-mark small">₹</div><div><strong>Finora</strong><small>Financial Analyzer</small></div></div>
+      <div class="side-label">WORKSPACE</div>
+      <nav class="nav-list">
+        <button class="nav-item active" data-page="dashboard"><span>▦</span> Overview</button>
+        <button class="nav-item" data-page="transactions"><span>＋</span> Add transaction</button>
+        <button class="nav-item" data-page="daily"><span>◷</span> Daily report</button>
+        <button class="nav-item" data-page="monthly"><span>▤</span> Monthly report</button>
+        <button class="nav-item" data-page="yearly"><span>▥</span> Yearly report</button>
+        <button class="nav-item" data-page="history"><span>☷</span> Transactions</button>
+        <button class="nav-item" data-page="settings"><span>⚙</span> Budget settings</button>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="secure-note"><span>🔒</span><div><b>Your space</b><small>Your account's records are kept separate.</small></div></div>
+        <button id="logout-btn" class="logout-btn">↪ Sign out</button>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <button id="menu-btn" class="menu-btn" aria-label="Open menu">☰</button>
+        <div><p class="eyebrow">PERSONAL FINANCE</p><h2 id="page-heading">Overview</h2></div>
+        <div class="user-pill"><div class="avatar" id="avatar">U</div><div><b id="top-username">User</b><small>Personal account</small></div></div>
+      </header>
+
+      <section class="page active" id="page-dashboard">
+        <div class="welcome-row"><div><h1>Good to see you, <span id="welcome-name">there</span> 👋</h1><p class="muted">Here's how your money is doing this month.</p></div><div class="date-chip" id="today-chip"></div></div>
+        <div class="metric-grid">
+          <article class="metric-card income-card"><div class="metric-top"><span>Total income</span><span class="metric-icon">↗</span></div><strong id="dash-income">₹0.00</strong><small>This month</small></article>
+          <article class="metric-card expense-card"><div class="metric-top"><span>Total expenses</span><span class="metric-icon">↘</span></div><strong id="dash-expenses">₹0.00</strong><small>This month</small></article>
+          <article class="metric-card balance-card"><div class="metric-top"><span>Net balance</span><span class="metric-icon">₹</span></div><strong id="dash-balance">₹0.00</strong><small>Income minus expenses</small></article>
+          <article class="metric-card budget-card"><div class="metric-top"><span>Budget left</span><span class="metric-icon">◎</span></div><strong id="dash-budget-left">—</strong><small id="dash-budget-caption">Set a monthly budget</small></article>
+        </div>
+        <div class="content-grid">
+          <article class="panel chart-panel"><div class="panel-heading"><div><h3>Spending breakdown</h3><p class="muted">Where your money went this month</p></div><span class="tag">THIS MONTH</span></div><div class="chart-wrap"><canvas id="category-chart"></canvas><div id="chart-empty" class="empty-overlay">Add an expense to see your chart.</div></div></article>
+          <article class="panel"><div class="panel-heading"><div><h3>Quick add</h3><p class="muted">Record an expense in seconds</p></div></div>
+            <form id="quick-form" class="stack-form">
+              <label>Type<select id="quick-type"><option>Expense</option><option>Income</option></select></label>
+              <label>Category<select id="quick-category"></select></label>
+              <label>Common item<select id="quick-item"></select></label>
+              <label>Amount (₹)<input id="quick-amount" type="number" min="0.01" step="0.01" required placeholder="0.00"></label>
+              <label>Date<input id="quick-date" type="date" required></label>
+              <button class="btn primary full" type="submit">＋ Save transaction</button>
+            </form>
+          </article>
+        </div>
+        <article class="panel recent-panel"><div class="panel-heading"><div><h3>Recent transactions</h3><p class="muted">Your latest activity</p></div><button class="text-btn" data-goto="history">View all →</button></div><div id="recent-list"></div></article>
+      </section>
+
+      <section class="page" id="page-transactions">
+        <div class="page-intro"><h1>Add transaction</h1><p class="muted">Choose a preset category, then enter the amount and date.</p></div>
+        <article class="panel form-panel"><form id="transaction-form" class="form-grid">
+          <label>Transaction type<select id="tx-type"><option>Expense</option><option>Income</option></select></label>
+          <label>Date<input id="tx-date" type="date" required></label>
+          <label>Category<select id="tx-category"></select></label>
+          <label>Common item<select id="tx-item"></select></label>
+          <label class="wide">Description <span class="optional">(optional)</span><input id="tx-description" maxlength="200" placeholder="e.g. Grocery shopping"></label>
+          <label class="wide">Amount (₹)<input id="tx-amount" type="number" min="0.01" step="0.01" required placeholder="Enter amount"></label>
+          <div class="wide"><button class="btn primary" type="submit">Save transaction →</button></div>
+        </form></article>
+      </section>
+
+      <section class="page" id="page-daily">
+        <div class="page-intro"><h1>Daily report</h1><p class="muted">Review transactions for any day.</p></div>
+        <div class="filter-row"><label>Select date<input id="daily-date" type="date"></label><button class="btn primary" id="daily-load">View report</button></div>
+        <div class="metric-grid compact"><article class="metric-card income-card"><span>Total income</span><strong id="daily-income">₹0.00</strong></article><article class="metric-card expense-card"><span>Total expenses</span><strong id="daily-expenses">₹0.00</strong></article><article class="metric-card balance-card"><span>Net balance</span><strong id="daily-balance">₹0.00</strong></article></div>
+        <article class="panel"><div class="panel-heading"><h3>Daily transactions</h3></div><div id="daily-table"></div></article>
+      </section>
+
+      <section class="page" id="page-monthly">
+        <div class="page-intro"><h1>Monthly report</h1><p class="muted">Your monthly totals and category-wise spending.</p></div>
+        <div class="filter-row"><label>Select month<input id="monthly-date" type="month"></label><button class="btn primary" id="monthly-load">View report</button></div>
+        <div class="metric-grid compact"><article class="metric-card income-card"><span>Total income</span><strong id="monthly-income">₹0.00</strong></article><article class="metric-card expense-card"><span>Total expenses</span><strong id="monthly-expenses">₹0.00</strong></article><article class="metric-card balance-card"><span>Net balance</span><strong id="monthly-balance">₹0.00</strong></article></div>
+        <div class="content-grid"><article class="panel"><div class="panel-heading"><h3>Category breakdown</h3></div><div class="chart-wrap"><canvas id="monthly-chart"></canvas><div id="monthly-chart-empty" class="empty-overlay">No expenses for this month.</div></div></article><article class="panel"><div class="panel-heading"><h3>Monthly budget</h3></div><div id="monthly-budget-summary" class="budget-summary">Set a budget from Budget settings.</div></article></div>
+        <article class="panel"><div class="panel-heading"><h3>Monthly transactions</h3><button class="btn secondary small-btn" id="monthly-csv">Export CSV</button></div><div id="monthly-table"></div></article>
+      </section>
+
+      <section class="page" id="page-yearly">
+        <div class="page-intro"><h1>Yearly report</h1><p class="muted">Compare your income and expenses month by month.</p></div>
+        <div class="filter-row"><label>Select year<select id="year-select"></select></label><button class="btn primary" id="year-load">View report</button><button class="btn secondary" id="year-csv">Export CSV</button></div>
+        <div class="metric-grid compact"><article class="metric-card income-card"><span>Yearly income</span><strong id="year-income">₹0.00</strong></article><article class="metric-card expense-card"><span>Yearly expenses</span><strong id="year-expenses">₹0.00</strong></article><article class="metric-card balance-card"><span>Net balance</span><strong id="year-balance">₹0.00</strong></article></div>
+        <article class="panel"><div class="panel-heading"><h3>Monthly trend</h3></div><div class="year-chart"><canvas id="year-chart"></canvas></div><div id="year-chart-empty" class="empty-overlay">No transactions for this year.</div></article>
+        <article class="panel"><div class="panel-heading"><h3>Top expense categories</h3></div><div id="year-category-table"></div></article>
+      </section>
+
+      <section class="page" id="page-history">
+        <div class="page-intro"><h1>Transactions</h1><p class="muted">Search, filter, export, or delete your records.</p></div>
+        <div class="filter-row history-filters"><label>Type<select id="history-type"><option>All</option><option>Expense</option><option>Income</option></select></label><label>Category<select id="history-category"><option>All</option></select></label><label>Search<input id="history-search" placeholder="Search description"></label><button class="btn secondary" id="history-csv">Export CSV</button></div>
+        <article class="panel"><div id="history-table"></div></article>
+      </section>
+
+      <section class="page" id="page-settings">
+        <div class="page-intro"><h1>Budget settings</h1><p class="muted">Set a monthly spending target and track how you're doing.</p></div>
+        <article class="panel settings-panel"><div class="panel-heading"><h3>Monthly expense budget</h3></div><form id="budget-form" class="budget-form"><label>Month<input id="budget-month" type="month" required></label><label>Budget amount (₹)<input id="budget-amount" type="number" min="0" step="0.01" required placeholder="e.g. 15000"></label><button class="btn primary" type="submit">Save budget</button></form><p class="muted small-copy">Your budget is saved to your account. It doesn't move money or connect to your bank.</p></article>
+        <article class="panel privacy-panel"><div class="privacy-icon">🔐</div><div><h3>Your personal finance space</h3><p class="muted">Each account sees only its own records through the API. Remember to use a unique password. This demo does not connect to banks or UPI apps.</p></div></article>
+      </section>
+      <footer>Finora · Personal Finance Analyzer <span>Data saved in your account database</span></footer>
+    </main>
+  </div>
+</body>
+</html>

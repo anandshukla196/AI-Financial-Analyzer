@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Finora Admin</title>
+  <link rel="stylesheet" href="/static/styles.css">
+  <style>
+    body{background:#f6f7fb;color:#20263a;font-family:Arial,sans-serif}.admin-wrap{max-width:1200px;margin:0 auto;padding:32px 20px}.admin-header{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:28px}.admin-header h1{margin:0}.admin-card,.admin-stat{background:#fff;border:1px solid #e9ecf4;border-radius:16px;padding:22px;box-shadow:0 8px 28px #20263a08}.admin-login{max-width:420px;margin:8vh auto}.admin-login label{display:grid;gap:8px;margin:18px 0;font-weight:600;font-size:14px}.admin-login input{padding:12px;border:1px solid #dfe3ee;border-radius:9px;font-size:15px}.admin-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:20px 0}.admin-stat small{color:#7d8498}.admin-stat strong{display:block;font-size:26px;margin-top:10px}.admin-section{margin:18px 0}.admin-section h2{font-size:20px}.table-wrap{overflow:auto}.admin-table{width:100%;border-collapse:collapse;min-width:720px}.admin-table th,.admin-table td{text-align:left;padding:12px;border-bottom:1px solid #eef0f5;font-size:13px}.admin-table th{color:#737b91;background:#fafbfe}.muted{color:#7d8498}.error{color:#c8374c;margin-top:12px}.hidden{display:none!important}.btn{cursor:pointer}@media(max-width:760px){.admin-stats{grid-template-columns:repeat(2,1fr)}.admin-wrap{padding:20px 12px}.admin-card{padding:15px}.admin-header{align-items:flex-start}}
+  </style>
+</head>
+<body>
+  <main class="admin-wrap">
+    <div class="admin-header"><div><p class="eyebrow">FINORA / ADMIN</p><h1>Admin dashboard</h1><p class="muted">View registered accounts and saved finance records.</p></div><button id="logout" class="btn secondary hidden">Sign out</button></div>
+    <section id="login-card" class="admin-card admin-login">
+      <h2>Admin sign in</h2><p class="muted">This area is restricted to the app administrator.</p>
+      <form id="login-form"><label>Admin password<input id="admin-password" type="password" required autocomplete="current-password"></label><button class="btn primary full" type="submit">Sign in →</button></form>
+      <p id="login-error" class="error"></p>
+    </section>
+    <section id="dashboard" class="hidden">
+      <div class="admin-stats">
+        <article class="admin-stat"><small>Registered users</small><strong id="stat-users">0</strong></article>
+        <article class="admin-stat"><small>Saved transactions</small><strong id="stat-transactions">0</strong></article>
+        <article class="admin-stat"><small>Total income</small><strong id="stat-income">₹0</strong></article>
+        <article class="admin-stat"><small>Total expenses</small><strong id="stat-expenses">₹0</strong></article>
+      </div>
+      <article class="admin-card admin-section"><h2>Registered users</h2><p class="muted">Passwords are not accessible from this dashboard.</p><div id="users-table"></div></article>
+      <article class="admin-card admin-section"><h2>Recent user transactions</h2><p class="muted">Showing up to 500 most recent records across accounts.</p><div id="transactions-table"></div></article>
+    </section>
+  </main>
+<script>
+const $=id=>document.getElementById(id);
+const money=value=>new Intl.NumberFormat('en-IN',{style:'currency',currency:'INR',maximumFractionDigits:2}).format(Number(value||0));
+const safe=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+async function api(url,options={}){const response=await fetch(url,{...options,headers:{'Content-Type':'application/json',...(options.headers||{})}});const data=await response.json().catch(()=>({}));if(!response.ok)throw new Error(data.detail||'Request failed');return data;}
+function table(target,headers,rows){$(target).innerHTML=rows.length?`<div class="table-wrap"><table class="admin-table"><thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table></div>`:'<p class="muted">No records yet.</p>';}
+async function load(){const data=await api('/api/admin/overview');$('stat-users').textContent=data.stats.users;$('stat-transactions').textContent=data.stats.transactions;$('stat-income').textContent=money(data.stats.income);$('stat-expenses').textContent=money(data.stats.expenses);table('users-table',['ID','Username','Created','Transactions','Income','Expenses'],data.users.map(u=>`<tr><td>${u.id}</td><td>${safe(u.username)}</td><td>${safe(u.created_at.replace('T',' ').slice(0,19))}</td><td>${u.transaction_count}</td><td>${money(u.total_income)}</td><td>${money(u.total_expenses)}</td></tr>`));table('transactions-table',['Date','Username','Description','Category','Type','Amount'],data.transactions.map(t=>`<tr><td>${safe(t.tx_date)}</td><td>${safe(t.username)}</td><td>${safe(t.description)}</td><td>${safe(t.category)}</td><td>${safe(t.tx_type)}</td><td>${money(t.amount)}</td></tr>`));$('login-card').classList.add('hidden');$('dashboard').classList.remove('hidden');$('logout').classList.remove('hidden');}
+$('login-form').addEventListener('submit',async e=>{e.preventDefault();$('login-error').textContent='';try{await api('/api/admin/login',{method:'POST',body:JSON.stringify({password:$('admin-password').value})});$('admin-password').value='';await load();}catch(err){$('login-error').textContent=err.message;}});
+$('logout').addEventListener('click',async()=>{try{await api('/api/admin/logout',{method:'POST'});}finally{$('dashboard').classList.add('hidden');$('login-card').classList.remove('hidden');$('logout').classList.add('hidden');}});
+(async()=>{try{await load();}catch(e){if(!/Admin login required|session expired/i.test(e.message))$('login-error').textContent=e.message;}})();
+</script>
+</body>
+</html>
